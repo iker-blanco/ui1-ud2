@@ -4,6 +4,7 @@ package exercise2;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.logging.Logger;
+import utils.CustomLogger;
 
 public class WaitingThreadsExercise {
 
@@ -23,7 +24,7 @@ class WaitingRunnable implements Runnable {
     // The wait time and creation time are final because they should not be changed after the thread is created
     private final long waitTime;
     private final String creationTime;
-    private static final Logger logger = Logger.getLogger(WaitingRunnable.class.getName());
+    private static final Logger logger = CustomLogger.getLogger(WaitingRunnable.class);
 
     public WaitingRunnable(long waitTime) {
         this.waitTime = waitTime;
