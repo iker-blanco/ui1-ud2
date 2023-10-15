@@ -7,6 +7,6 @@ import java.util.logging.LogRecord;
 public class CustomLogFormatter extends Formatter {
     @Override
     public String format(LogRecord record) {
-        return record.getMessage() + "\n";
+        return record.getSourceClassName() + ": " + record.getMessage() + "\n";
     }
 }
