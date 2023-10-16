@@ -2,21 +2,21 @@ package exercise5;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+
 import utils.CustomLogger;
 
 public class ProducerConsumerExercise {
 
     // Both MAX_SIZE and NUMBERS_TO_PRODUCE are constants, so we can use static final to declare them
     private static final int MAX_SIZE = 10;
-    private static final int NUMBERS_TO_PRODUCE = 5000;
+    private static final int NUMBERS_TO_PRODUCE = 100;
 
     public static void main(String[] args) {
-        // We use a LinkedList as the queue to store the numbers
-        Queue<Integer> queue = new LinkedList<>();
+        // We use a ConcurrentLinkedQueue to store the values
+        ConcurrentLinkedQueue<Integer> queue = new ConcurrentLinkedQueue<>();
         // We use AtomicInteger to store the sum and count, so that we can use them in multiple threads
         // Integers are not thread-safe, so we cannot use them in multiple threads
         AtomicInteger sum = new AtomicInteger(0);
@@ -33,12 +33,12 @@ public class ProducerConsumerExercise {
 }
 
 class Producer implements Runnable {
-    private final Queue<Integer> queue;
+    private final ConcurrentLinkedQueue<Integer> queue;
     private final int maxSize;
     private final int numbersToProduce;
     private static final Logger logger = CustomLogger.getLogger(Producer.class);
 
-    public Producer(Queue<Integer> queue, int maxSize, int numbersToProduce) {
+    public Producer(ConcurrentLinkedQueue<Integer> queue, int maxSize, int numbersToProduce) {
         this.queue = queue;
         this.maxSize = maxSize;
         this.numbersToProduce = numbersToProduce;
@@ -50,32 +50,31 @@ class Producer implements Runnable {
             for (int i = 0; i < numbersToProduce; i++) {
                 synchronized (queue) {
                     while (queue.size() == maxSize) {
-                        // The queue is full, so the producer should wait
-                        logger.info("Queue is full, " + Thread.currentThread().getName() + " is waiting.");
+                        logger.info("Queue is full, waiting...");
                         queue.wait();
                     }
-                    // generate a random number between 0 and 100
+
                     Integer value = (int) (Math.random() * 100);
-                    logger.info("Sending the " + i + "th value to queue: " + value);
                     queue.add(value);
+                    logger.info("Queueing the " + i + "th value: " + value);
                     queue.notifyAll();
                 }
             }
         } catch (InterruptedException e) {
-            logger.warning("The producer was interrupted.");
+            logger.warning("Producer was interrupted");
         }
     }
 }
 
 class SumConsumer implements Runnable {
-    private final Queue<Integer> queue;
+    private final ConcurrentLinkedQueue<Integer> queue;
     // Use AtomicInteger to store the sum and count, so that we can use them in multiple threads
     // Integers are not thread-safe, so we cannot use them in multiple threads
     private final AtomicInteger sum;
     private final AtomicInteger count;
     private static final Logger logger = CustomLogger.getLogger(SumConsumer.class);
 
-    public SumConsumer(Queue<Integer> queue, AtomicInteger sum, AtomicInteger count) {
+    public SumConsumer(ConcurrentLinkedQueue<Integer> queue, AtomicInteger sum, AtomicInteger count) {
         this.queue = queue;
         this.sum = sum;
         this.count = count;
@@ -86,22 +85,28 @@ class SumConsumer implements Runnable {
         try {
             // TODO: add an end condition for the loop so that the consumer will stop when the producer finishes
             while (true) {
+                Integer value;
                 synchronized (queue) {
                     while (queue.isEmpty()) {
-                        logger.info("Queue is empty, " + Thread.currentThread().getName() + " is waiting.");
+                        logger.info("Queue is empty, waiting...");
                         queue.wait();
                     }
-                    int value = queue.poll();
+
+                    value = queue.poll();
                     logger.info("Consuming value: " + value);
-                    // Sleep for 100 milliseconds to make the code more observable
-                    Thread.sleep(100);
-                    sum.addAndGet(value);
-                    count.incrementAndGet();
-                    queue.notifyAll();
+                    // Notify the producer that the queue is not full anymore
+                    queue.notify();
                 }
+
+                sum.addAndGet(value);
+                count.incrementAndGet();
+                // sleep a random amount of time between 0 and 10 milliseconds
+                Thread.sleep((int) (Math.random() * 10));
+
             }
+            // sleep a random amount of time between 0 and 100 milliseconds
         } catch (InterruptedException e) {
-            logger.warning("The consumer was interrupted.");
+            logger.warning("Consumer was interrupted");
         }
     }
 }
