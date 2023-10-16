@@ -6,6 +6,8 @@ This repository contains the exercises of the second unit of the subject `Progra
 A package is created for each exercise. The package name is the same as the exercise number. Each package contains a
 JAVA file with the solution of the exercise.
 
+Everything has been tested with `Java 21` OpenJDK.
+
 ## Sincronización de hilos
 
 ### Enunciado 1.
